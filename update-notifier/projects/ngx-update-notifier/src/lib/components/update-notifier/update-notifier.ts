@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { VersionCheckService, VersionInfo } from '../../services/ngx-update-notifier.service';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'ngx-update-notifier',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: 'update-notifier.component.html',
   styleUrl: 'update-notifier.component.css'
 })

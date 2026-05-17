@@ -1,7 +1,7 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed,  } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { VersionCheckService, VersionInfo } from './version-check.service';
-import { APP_VERSION } from './version.token';
+import { VersionCheckService, VersionInfo } from './ngx-update-notifier.service';
+import { APP_VERSION } from '../tokens/update-notifier-token';
 import { take, firstValueFrom } from 'rxjs';
 
 describe('VersionCheckService', () => {
