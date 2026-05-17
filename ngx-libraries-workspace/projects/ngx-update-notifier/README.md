@@ -1,64 +1,97 @@
-# NgxUpdateNotifier
+# ngx-update-notifier
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.0.
+A lightweight, zero‑dependency Angular library that automatically detects new versions of your application and prompts users to refresh the UI. No Service Worker required – works with a simple HTTP polling strategy.
 
-## Code scaffolding
+## Features
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- ✅ **Automatic version detection** – polls a static `version.json` file on your server
+- ✅ **No Service Worker needed** – works with any Angular app (including those without PWA setup)
+- ✅ **Standalone component** – drop it into your app and it just works
+- ✅ **Customizable UI** – the built‑in notification can be styled or replaced with your own component
+- ✅ **Dismiss & remember** – users can dismiss a version; it won’t be shown again until a newer version arrives
+- ✅ **Configurable polling interval** – default is 30 seconds
+- ✅ **Full TypeScript** – with clear APIs and strong typing
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the library, run:
+## Installation
 
 ```bash
-ng build ngx-update-notifier
+npm install ngx-update-notifier
 ```
 
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
+## Quick Start
 
-### Publishing the Library
+### 1. Provide the current version
 
-Once the project is built, you can publish your library by following these steps:
+In your Angular application, provide the current version using the `APP_VERSION` injection token.
 
-1. Navigate to the `dist` directory:
+**In `app.config.ts` (standalone):**
 
-   ```bash
-   cd dist/ngx-update-notifier
-   ```
+```typescript
+import { ApplicationConfig } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { APP_VERSION } from 'ngx-update-notifier';
 
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpClient(),
+    { provide: APP_VERSION, useValue: '1.0.0' } // your current version
+  ]
+};
 ```
 
-## Running end-to-end tests
+**In your `app.module.ts`**
 
-For end-to-end (e2e) testing, run:
+```typescript
+import { NgModule } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+import { APP_VERSION } from 'ngx-update-notifier';
 
-```bash
-ng e2e
+@NgModule({
+  imports: [HttpClientModule],
+  providers: [
+    { provide: APP_VERSION, useValue: '1.0.0' }
+  ]
+})
+export class AppModule {}
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Add the component to your app
+In your root component template (app.component.html):
 
-## Additional Resources
+```html
+import { Component } from '@angular/core';
+import { UpdateNotifierComponent } from 'ngx-update-notifier';
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [UpdateNotifierComponent],
+  template: `
+    <router-outlet></router-outlet>
+    <ngx-update-notifier />
+  `
+})
+export class AppComponent {}
+```
+
+## Generate your `version.json` 
+
+Create a script that writes the current version to src/version.json before each build.
+
+scripts/update-version.js
+
+```javascript
+const fs = require('fs');
+const pkg = require('../package.json');
+fs.writeFileSync('./src/version.json', JSON.stringify({ version: pkg.version }));
+```
+
+Add it to your package.json build command:
+
+```json
+"scripts": {
+  "build": "node scripts/update-version.js && ng build"
+}
+```
+
+After building, the file will be available at /version.json in your deployed app. The library polls this file and compares the version value with the one you provided.
