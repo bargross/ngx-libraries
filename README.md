@@ -1,3 +1,5 @@
+#### Package has not been released yet, is still being developed.
+
 # ngx-update-notifier
 
 A lightweight, zero‑dependency Angular library that automatically detects new versions of your application and prompts users to refresh the UI. No Service Worker required – works with a simple HTTP polling strategy.
