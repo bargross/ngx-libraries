@@ -1,0 +1,10 @@
+<div class="update-notification" *ngIf="showNotification && versionInfo?.updateAvailable">
+  <div class="update-message">
+    🔄 New version {{ versionInfo.latest }} is available!
+    <span class="current-version">(Current: {{ versionInfo.current }})</span>
+  </div>
+  <div class="update-actions">
+    <button class="update-btn" (click)="refresh()">Update Now</button>
+    <button class="dismiss-btn" (click)="dismiss()">Dismiss</button>
+  </div>
+</div>
