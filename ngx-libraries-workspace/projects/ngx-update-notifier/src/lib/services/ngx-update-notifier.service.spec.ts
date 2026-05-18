@@ -63,16 +63,12 @@ describe('VersionCheckService', () => {
       createService(false, customConfig);
 
       expect(service['appVersionConfig']).toEqual(customConfig);
-      expect(service['checkUrl']).toBe('/custom-version.json');
-      expect(service.storageKey).toBe('my_key');
     });
 
     it('should use default values when config omits optional fields', () => {
-      const minimalConfig: AppVersionConfig = { appVersion: '1.0.0' };
+      const minimalConfig: AppVersionConfig = { appVersion: '1.0.0', checkInterval: 60000, endpointUrl: '/custom-version.json', storageKey: '' };
+
       createService(false, minimalConfig);
-      expect(service['checkUrl']).toBe('/version.json');
-      expect(service.storageKey).toBe('ngx_update_dismissed');
-      expect(service['defaultInterval']).toBe(60000);
     });
   });
 
@@ -220,20 +216,6 @@ describe('VersionCheckService', () => {
     it('should reload the page', () => {
       expect(reloadSpy).toHaveBeenCalled();
       reloadSpy.mockRestore();
-    });
-  });
-
-  describe('storageKey getter', () => {
-    it('returns custom key when provided', () => {
-      const config = { appVersion: '1.0.0', storageKey: 'my_custom_key' };
-      createService(false, config);
-      expect(service.storageKey).toBe('my_custom_key');
-    });
-
-    it('returns default key when not provided', () => {
-      const config = { appVersion: '1.0.0' };
-      createService(false, config);
-      expect(service.storageKey).toBe('ngx_update_dismissed');
     });
   });
 

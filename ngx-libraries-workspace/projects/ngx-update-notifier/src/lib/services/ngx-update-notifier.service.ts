@@ -6,27 +6,21 @@ import { APP_VERSION } from '../tokens/update-notifier-token';
 import { VersionInfo } from '../models/version-info.model';
 import { AppVersionConfig } from '../models/app-version-config.model';
 import { SwUpdate } from '@angular/service-worker';
+import { AppVersionDefaults } from '../constants/app-version-constants';
 
 @Injectable({ providedIn: 'root' })
 export class VersionCheckService implements OnDestroy {
   private destroy$ = new Subject<void>();
   private http = inject(HttpClient);
   private appVersionConfig: AppVersionConfig; // Will be injected at build time
-  private checkUrl = '/version.json'; // Static file to compare against
-  private defaultInterval = 60000; // Default to 60 seconds
 
   public versionInfo$ = new Subject<VersionInfo>();
-
-  public get storageKey(): string {
-    return this.appVersionConfig.storageKey ?? 'ngx_update_dismissed';
-  }
 
   constructor(
     @Inject(APP_VERSION) version: AppVersionConfig,
     @Optional() private swUpdate: SwUpdate,
   ) {
     this.appVersionConfig = version;
-    this.checkUrl = version.endpointUrl ?? this.checkUrl;
   }
 
   ngOnDestroy() {
@@ -43,7 +37,7 @@ export class VersionCheckService implements OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(event => {
         if (event.type === 'VERSION_READY') {
-          const latestVersion = event.latestVersion.hash; // You can also use event.latestVersion.appData if you include version info there
+          const latestVersion = event.latestVersion.hash;
 
           const versionInfo: VersionInfo = {
             current: this.appVersionConfig.appVersion,
@@ -67,10 +61,17 @@ export class VersionCheckService implements OnDestroy {
   }
 
     /**
+   * Refresh the browser
+   */
+  public refreshApp(): void {
+    window.location.reload();
+  }
+
+    /**
    * Poll for new versions at specified interval (in milliseconds)
    */
   private pollForUpdates(): void {
-    let checkInterval = this.appVersionConfig.checkInterval ?? this.defaultInterval;
+    let checkInterval = this.appVersionConfig.checkInterval ?? AppVersionDefaults.intervalMs;
 
     interval(checkInterval).pipe(
       startWith(0), // Check immediately on subscribe
@@ -87,7 +88,10 @@ export class VersionCheckService implements OnDestroy {
    * Single check for update
    */
   private checkForUpdate(): Observable<VersionInfo> {
-    return this.http.get<{ version: string }>(this.checkUrl, { cache: 'no-store' }).pipe(
+    let checkUrl = this.appVersionConfig.endpointUrl ?? AppVersionDefaults.checkUrl;
+
+    return this.http.get<{ version: string }>(checkUrl, { cache: 'no-store' })
+    .pipe(
       map(response => ({
         current: this.appVersionConfig.appVersion,
         latest: response.version,
@@ -99,12 +103,5 @@ export class VersionCheckService implements OnDestroy {
         updateAvailable: false
       } as VersionInfo))
     );
-  }
-
-  /**
-   * Refresh the browser
-   */
-  public refreshApp(): void {
-    window.location.reload();
   }
 }

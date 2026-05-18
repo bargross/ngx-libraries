@@ -1,9 +1,12 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, Inject } from '@angular/core';
 
 import { VersionCheckService } from '../../services/ngx-update-notifier.service';
 import { Subject, Subscription, takeUntil } from 'rxjs';
 import { VersionInfo } from '../../models/version-info.model';
 import { AppVersionConfig } from '../../models/app-version-config.model';
+import { APP_VERSION } from '../../tokens/update-notifier-token';
+import { isNullEmptyOrWhitespace } from '../../utils/string-validator';
+import { AppVersionDefaults } from '../../constants/app-version-constants';
 
 @Component({
   selector: 'ngx-update-notifier',
@@ -16,18 +19,28 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   private versionService = inject(VersionCheckService);
-  private subscription?: Subscription;
-  private dismissedVersion: string | null = null;
+  private dismissedVersion: string | null = null
+  private storageKey: string | null | undefined = null;
 
   public showNotification = false;
   public versionInfo: VersionInfo | null = null;
 
+  constructor(
+    @Inject(APP_VERSION) private version: AppVersionConfig,
+  ) {
+    if (isNullEmptyOrWhitespace(this.version.storageKey)) {
+      throw Error("Storage key must be provided!");
+    }
+  }
+
   ngOnInit() {
-    this.dismissedVersion = localStorage.getItem(this.versionService.storageKey);
+    this.storageKey = this.version.storageKey;
+
+    this.dismissedVersion = localStorage.getItem(this.storageKey as string);
 
     this.versionService.initUpdateMonitoring();
 
-    this.subscription = this.versionService.versionInfo$
+    this.versionService.versionInfo$
     .pipe(
       takeUntil(this.destroy$)
     ).subscribe(info => {
@@ -48,12 +61,19 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
     // Store dismissed version in localStorage
     if (this.versionInfo?.latest) {
       this.dismissedVersion = this.versionInfo.latest;
+      let storageKey = this.getStorageKey();
 
-      localStorage.setItem(this.versionService.storageKey, this.versionInfo.latest);
+      localStorage.setItem(storageKey, this.versionInfo.latest);
     }
   }
 
   ngOnDestroy() {
-    this.subscription?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private getStorageKey(): string {
+    return (isNullEmptyOrWhitespace(this.version.storageKey) ?
+        AppVersionDefaults.storageKey : this.version.storageKey) as string;
   }
 }

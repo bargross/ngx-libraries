@@ -146,12 +146,4 @@ describe('UpdateNotifierComponent', () => {
       expect(mockVersionService.refreshApp).toHaveBeenCalledTimes(1);
     });
   });
-
-  describe('cleanup (ngOnDestroy)', () => {
-    it('should unsubscribe from subscription', () => {
-      const unsubscribeSpy = vi.spyOn(component['subscription']!, 'unsubscribe');
-      component.ngOnDestroy();
-      expect(unsubscribeSpy).toHaveBeenCalled();
-    });
-  });
 });
