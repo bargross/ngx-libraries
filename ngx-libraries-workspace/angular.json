@@ -27,7 +27,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/ngx-update-notifier/tsconfig.spec.json"
+            "tsConfig": "projects/ngx-update-notifier/tsconfig.spec.json",
+            "browsers": ["chromium"]
           }
         }
       }

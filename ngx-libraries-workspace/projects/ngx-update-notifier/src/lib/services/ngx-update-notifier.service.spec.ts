@@ -2,117 +2,259 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { VersionCheckService } from './ngx-update-notifier.service';
 import { APP_VERSION } from '../tokens/update-notifier-token';
-import { VersionInfo } from '../models/version-info.model';
-import { firstValueFrom, take } from 'rxjs';
+import { AppVersionConfig } from '../models/app-version-config.model';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { Subject } from 'rxjs';
+
+import { fakeAsync, tick } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
 
 describe('VersionCheckService', () => {
   let service: VersionCheckService;
   let httpMock: HttpTestingController;
-  const mockVersion = '1.0.0';
-  const versionUrl = '/version.json';
+  let mockSwUpdate: {
+    isEnabled: boolean;
+    checkForUpdate: ReturnType<typeof vi.fn>;
+    versionUpdates: Subject<any>;
+  };
+  const defaultConfig: AppVersionConfig = {
+    appVersion: '1.0.0',
+    checkInterval: 60000,
+    endpointUrl: '/version.json',
+    storageKey: 'custom_storage_key'
+  };
 
-  beforeEach(() => {
+  function createService(swEnabled: boolean = false, config: AppVersionConfig = defaultConfig) {
+    mockSwUpdate = {
+      isEnabled: swEnabled,
+      checkForUpdate: vi.fn().mockResolvedValue(undefined),
+      versionUpdates: new Subject<any>()
+    };
+
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [VersionCheckService, { provide: APP_VERSION, useValue: mockVersion }]
+      providers: [
+        VersionCheckService,
+        { provide: APP_VERSION, useValue: config },
+        { provide: SwUpdate, useValue: mockSwUpdate }
+      ]
     });
+
     service = TestBed.inject(VersionCheckService);
     httpMock = TestBed.inject(HttpTestingController);
-  });
+    return service;
+  }
 
   afterEach(() => {
     httpMock.verify();
-    TestBed.resetTestingModule();
+    vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
-  it('returns updateAvailable=false when versions match', async () => {
-    const resultPromise = firstValueFrom(service.checkForUpdate());
-    const req = httpMock.expectOne(versionUrl);
-    req.flush({ version: '1.0.0' });
+  describe('constructor & configuration', () => {
+    it('should use provided config values', () => {
+      const customConfig: AppVersionConfig = {
+        appVersion: '2.0.0',
+        checkInterval: 30000,
+        endpointUrl: '/custom-version.json',
+        storageKey: 'my_key'
+      };
 
-    const result = await resultPromise;
-    expect(result.current).toBe('1.0.0');
-    expect(result.latest).toBe('1.0.0');
-    expect(result.updateAvailable).toBe(false);
-  });
+      createService(false, customConfig);
 
-  it('returns updateAvailable=true when newer version exists', async () => {
-    const resultPromise = firstValueFrom(service.checkForUpdate());
-    const req = httpMock.expectOne(versionUrl);
-    req.flush({ version: '2.0.0' });
-
-    const result = await resultPromise;
-    expect(result.updateAvailable).toBe(true);
-    expect(result.latest).toBe('2.0.0');
-  });
-
-  it('handles HTTP errors gracefully', async () => {
-    const resultPromise = firstValueFrom(service.checkForUpdate());
-    const req = httpMock.expectOne(versionUrl);
-    req.error(new ErrorEvent('Network error'));
-
-    const result = await resultPromise;
-    expect(result.latest).toBeNull();
-    expect(result.updateAvailable).toBe(false);
-  });
-
-  it('handles 404 responses gracefully', async () => {
-    const resultPromise = firstValueFrom(service.checkForUpdate());
-    const req = httpMock.expectOne(versionUrl);
-    req.flush('Not found', { status: 404, statusText: 'Not Found' });
-
-    const result = await resultPromise;
-    expect(result.latest).toBeNull();
-    expect(result.updateAvailable).toBe(false);
-  });
-
-  describe('pollForUpdates', () => {
-    it('emits initial value immediately', async () => {
-      const firstEmission = firstValueFrom(service.pollForUpdates(60000));
-      const req = httpMock.expectOne(versionUrl);
-      req.flush({ version: '1.0.0' });
-
-      const result = await firstEmission;
-      expect(result.updateAvailable).toBe(false);
+      expect(service['appVersionConfig']).toEqual(customConfig);
+      expect(service['checkUrl']).toBe('/custom-version.json');
+      expect(service.storageKey).toBe('my_key');
     });
 
-    it('respects interval and distinctUntilChanged', async () => {
-      vi.useFakeTimers();
+    it('should use default values when config omits optional fields', () => {
+      const minimalConfig: AppVersionConfig = { appVersion: '1.0.0' };
+      createService(false, minimalConfig);
+      expect(service['checkUrl']).toBe('/version.json');
+      expect(service.storageKey).toBe('ngx_update_dismissed');
+      expect(service['defaultInterval']).toBe(60000);
+    });
+  });
 
-      const emitted: VersionInfo[] = [];
-      const subscription = service.pollForUpdates(1000).subscribe(v => emitted.push(v));
+  describe('initUpdateMonitoring - PWA mode (SwUpdate enabled)', () => {
+    beforeEach(() => {
+      createService(true);
+
+      service.initUpdateMonitoring();
+    });
+
+    it('should call SwUpdate.checkForUpdate on init', () => {
+      expect(mockSwUpdate.checkForUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should emit VERSION_READY event as versionInfo', async () => {
+      // Subscribe to versionInfo$ and take the first emission
+      const versionPromise = firstValueFrom(service.versionInfo$);
+
+      // Simulate checkForUpdate resolving (it's a promise)
+      await vi.waitFor(() => {
+        expect(mockSwUpdate.checkForUpdate).toHaveBeenCalled();
+      });
+
+      const readyEvent: VersionReadyEvent = {
+        type: 'VERSION_READY',
+        currentVersion: { hash: 'oldhash' },
+        latestVersion: { hash: 'abc123hash' }
+      };
+      mockSwUpdate.versionUpdates.next(readyEvent);
+
+      const info = await versionPromise;
+      expect(info.current).toBe('1.0.0');
+      expect(info.latest).toBe('abc123hash');
+      expect(info.updateAvailable).toBe(true);
+    });
+
+    it('should NOT start HTTP polling when SwUpdate is enabled', () => {
+      httpMock.expectNone('/version.json');
+    });
+
+    it('should not emit for other versionUpdates event types', async () => {
+      // Spy on versionInfo$ next
+      const nextSpy = vi.spyOn(service.versionInfo$, 'next');
+
+      await vi.waitFor(() => {
+        expect(mockSwUpdate.checkForUpdate).toHaveBeenCalled();
+      });
+
+      mockSwUpdate.versionUpdates.next({ type: 'VERSION_DETECTED' });
+
+      expect(nextSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('initUpdateMonitoring - fallback to HTTP polling', () => {
+    beforeEach(() => {
+      createService(false);
+
+      service.initUpdateMonitoring();
+    });
+
+    it('should start polling when SwUpdate is disabled', fakeAsync(() => {
+      // Immediate first request (startWith(0))
+      let req = httpMock.expectOne('/version.json');
+      req.flush({ version: '1.0.0' });
+      tick(100);
+
+      // Advance to next poll interval
+      tick(defaultConfig.checkInterval!);
+
+      req = httpMock.expectOne('/version.json');
+      req.flush({ version: '2.0.0' });
+
+      tick(100);
+
+      httpMock.verify();
+    }));
+
+    it('should emit versionInfo when update is available via polling', async () => {
+      const versionPromise = firstValueFrom(service.versionInfo$);
+
+      const req = httpMock.expectOne('/version.json');
+      req.flush({ version: '2.0.0' });
+
+      const info = await versionPromise;
+      expect(info.current).toBe('1.0.0');
+      expect(info.latest).toBe('2.0.0');
+      expect(info.updateAvailable).toBe(true);
+    });
+
+    it('should handle HTTP errors gracefully in polling mode', async () => {
+      const versionPromise = firstValueFrom(service.versionInfo$);
+
+      const req = httpMock.expectOne('/version.json');
+      req.error(new ErrorEvent('Network error'));
+
+      const info = await versionPromise;
+      expect(info.current).toBe('1.0.0');
+      expect(info.latest).toBeNull();
+      expect(info.updateAvailable).toBe(false);
+    });
+
+    it('should not emit duplicate versions due to distinctUntilChanged', fakeAsync(() => {
+      const emitted: any[] = [];
+      service.versionInfo$.subscribe(info => emitted.push(info));
 
       // First request
-      let req = httpMock.expectOne(versionUrl);
+      let req = httpMock.expectOne('/version.json');
       req.flush({ version: '1.0.0' });
-      await vi.advanceTimersByTimeAsync(100);
+      tick(100);
+
+      // Advance to next poll (same version)
+      tick(defaultConfig.checkInterval!);
+      req = httpMock.expectOne('/version.json');
+      req.flush({ version: '1.0.0' });
+      tick(100);
+
       expect(emitted.length).toBe(1);
       expect(emitted[0].updateAvailable).toBe(false);
+    }));
 
-      // Second request, same version – no emission
-      await vi.advanceTimersByTimeAsync(1000);
-      req = httpMock.expectOne(versionUrl);
+    it('should stop polling on ngOnDestroy', fakeAsync(() => {
+      let req = httpMock.expectOne('/version.json');
       req.flush({ version: '1.0.0' });
-      await vi.advanceTimersByTimeAsync(100);
-      expect(emitted.length).toBe(1);
+      tick(100);
 
-      // Third request, new version – emission
-      await vi.advanceTimersByTimeAsync(1000);
-      req = httpMock.expectOne(versionUrl);
-      req.flush({ version: '2.0.0' });
-      await vi.advanceTimersByTimeAsync(100);
-      expect(emitted.length).toBe(2);
-      expect(emitted[1].updateAvailable).toBe(true);
+      service.ngOnDestroy();
 
-      subscription.unsubscribe();
-      vi.useRealTimers();
+      tick(defaultConfig.checkInterval!);
+      httpMock.expectNone('/version.json');
+    }));
+  });
+
+  describe('refreshApp', () => {
+    let reloadSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      createService(false);
+
+      reloadSpy = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+
+      service.refreshApp();
+    });
+
+    it('should reload the page', () => {
+      expect(reloadSpy).toHaveBeenCalled();
+      reloadSpy.mockRestore();
     });
   });
 
-  it('calls window.location.reload', () => {
-    const reloadSpy = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
-    service.refreshApp();
-    expect(reloadSpy).toHaveBeenCalled();
-    reloadSpy.mockRestore();
+  describe('storageKey getter', () => {
+    it('returns custom key when provided', () => {
+      const config = { appVersion: '1.0.0', storageKey: 'my_custom_key' };
+      createService(false, config);
+      expect(service.storageKey).toBe('my_custom_key');
+    });
+
+    it('returns default key when not provided', () => {
+      const config = { appVersion: '1.0.0' };
+      createService(false, config);
+      expect(service.storageKey).toBe('ngx_update_dismissed');
+    });
+  });
+
+  describe('polling interval configuration', () => {
+    it('uses config.checkInterval when provided', fakeAsync(() => {
+      const customInterval = 10000;
+      const config = { appVersion: '1.0.0', checkInterval: customInterval };
+      createService(false, config);
+      service.initUpdateMonitoring();
+
+      // First request immediate
+      let req = httpMock.expectOne('/version.json');
+      req.flush({ version: '1.0.0' });
+      tick(100);
+
+      tick(customInterval - 50);
+      httpMock.expectNone('/version.json');
+
+      tick(50);
+      req = httpMock.expectOne('/version.json');
+      req.flush({ version: '1.0.0' });
+    }));
   });
 });

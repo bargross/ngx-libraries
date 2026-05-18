@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { UpdateNotifierComponent } from './update-notifier';
 import { VersionCheckService } from './../../services/ngx-update-notifier.service';
 import { Subject } from 'rxjs';
@@ -6,141 +6,152 @@ import { By } from '@angular/platform-browser';
 import { VersionInfo } from '../../models/version-info.model';
 
 describe('UpdateNotifierComponent', () => {
-  // Helper to create a fresh component with a new mock service
-  async function createComponent() {
-    const pollSubject = new Subject<VersionInfo>();
-    const mockVersionService = {
-      pollForUpdates: vi.fn().mockReturnValue(pollSubject.asObservable()),
-      refreshApp: vi.fn()
+  let component: UpdateNotifierComponent;
+  let fixture: ComponentFixture<UpdateNotifierComponent>;
+  let mockVersionService: {
+    initUpdateMonitoring: ReturnType<typeof vi.fn>;
+    refreshApp: ReturnType<typeof vi.fn>;
+    storageKey: string;
+    versionInfo$: Subject<VersionInfo>;
+  };
+
+  const mockStorageKey = 'test_storage_key';
+
+  beforeEach(async () => {
+    mockVersionService = {
+      initUpdateMonitoring: vi.fn(),
+      refreshApp: vi.fn(),
+      storageKey: mockStorageKey,
+      versionInfo$: new Subject<VersionInfo>()
     };
 
     await TestBed.configureTestingModule({
       imports: [UpdateNotifierComponent],
-      providers: [{ provide: VersionCheckService, useValue: mockVersionService }]
+      providers: [
+        { provide: VersionCheckService, useValue: mockVersionService }
+      ]
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(UpdateNotifierComponent);
-    const component = fixture.componentInstance;
-    fixture.detectChanges();
+    fixture = TestBed.createComponent(UpdateNotifierComponent);
+    component = fixture.componentInstance;
 
-    return { fixture, component, pollSubject, mockVersionService };
-  }
+    // ngOnInit is called automatically after creation
+    fixture.detectChanges();
+  });
 
   afterEach(() => {
-    TestBed.resetTestingModule(); // Fully reset for next test
     localStorage.clear();
     vi.clearAllMocks();
   });
 
-  it('creates the component', async () => {
-    const { component } = await createComponent();
-    expect(component).toBeTruthy();
-  });
+  describe('initialization (ngOnInit)', () => {
+    it('should load dismissedVersion from localStorage using service.storageKey', () => {
+      const dismissedVersion = '2.0.0';
+      localStorage.setItem(mockStorageKey, dismissedVersion);
+      // Recreate component to trigger ngOnInit again
+      fixture = TestBed.createComponent(UpdateNotifierComponent);
+      component = fixture.componentInstance;
 
-  it('starts polling with 30s interval', async () => {
-    const { mockVersionService } = await createComponent();
-    expect(mockVersionService.pollForUpdates).toHaveBeenCalledWith(30000);
-  });
+      fixture.detectChanges();
 
-  it('loads dismissed version from localStorage on init', async () => {
-    localStorage.setItem('ngx_update_dismissed', '2.0.0');
-    const { component } = await createComponent();
-    expect(component['dismissedVersion']).toBe('2.0.0');
-  });
-
-  it('shows notification when update is available and not dismissed', async () => {
-    const { fixture, pollSubject } = await createComponent();
-    const versionInfo: VersionInfo = {
-      current: '1.0.0',
-      latest: '2.0.0',
-      updateAvailable: true
-    };
-    pollSubject.next(versionInfo);
-    fixture.detectChanges();
-
-    const notification = await vi.waitFor(() => {
-      const div = fixture.debugElement.query(By.css('.update-notification'));
-      if (!div) throw new Error('Notification not shown');
-      return div;
+      expect(component['dismissedVersion']).toBe(dismissedVersion);
     });
-    expect(notification.nativeElement.textContent).toContain('New version 2.0.0');
-  });
 
-  it('does NOT show notification when updateAvailable is false', async () => {
-    const { fixture, pollSubject } = await createComponent();
-    const versionInfo: VersionInfo = {
-      current: '1.0.0',
-      latest: '1.0.0',
-      updateAvailable: false
-    };
-    pollSubject.next(versionInfo);
-    fixture.detectChanges();
-
-    await vi.waitFor(() => {
-      const notification = fixture.debugElement.query(By.css('.update-notification'));
-      expect(notification).toBeNull();
+    it('should call initUpdateMonitoring on the service', () => {
+      expect(mockVersionService.initUpdateMonitoring).toHaveBeenCalledTimes(1);
     });
-  });
 
-  it('does NOT show notification for dismissed version', async () => {
-    localStorage.setItem('ngx_update_dismissed', '2.0.0');
-    const { fixture, pollSubject } = await createComponent();
-    const versionInfo: VersionInfo = {
-      current: '1.0.0',
-      latest: '2.0.0',
-      updateAvailable: true
-    };
-    pollSubject.next(versionInfo);
-    fixture.detectChanges();
+    it('should subscribe to versionInfo$ and update versionInfo and showNotification', () => {
+      const versionInfo: VersionInfo = {
+        current: '1.0.0',
+        latest: '2.0.0',
+        updateAvailable: true
+      };
+      mockVersionService.versionInfo$.next(versionInfo);
+      expect(component.versionInfo).toEqual(versionInfo);
+      expect(component.showNotification).toBe(true);
+    });
 
-    await vi.waitFor(() => {
-      const notification = fixture.debugElement.query(By.css('.update-notification'));
-      expect(notification).toBeNull();
+    it('should not show notification if updateAvailable is false', () => {
+      const versionInfo: VersionInfo = {
+        current: '1.0.0',
+        latest: '1.0.0',
+        updateAvailable: false
+      };
+      mockVersionService.versionInfo$.next(versionInfo);
+      expect(component.showNotification).toBe(false);
+    });
+
+    it('should not show notification if version is dismissed', () => {
+      // Pre-dismiss version 2.0.0
+      localStorage.setItem(mockStorageKey, '2.0.0');
+      // Recreate component to load the dismissed version
+      fixture = TestBed.createComponent(UpdateNotifierComponent);
+      component = fixture.componentInstance;
+
+      fixture.detectChanges();
+
+      // Ensure the mock service's versionInfo$ is still the same subject
+      // (we need to re-assign because component instance is new)
+      // For simplicity, we can re-fetch the service mock from component's injector
+      // But in this test we can just use the existing mockVersionService subject
+      // The new component's subscription uses the same subject reference.
+      const versionInfo: VersionInfo = {
+        current: '1.0.0',
+        latest: '2.0.0',
+        updateAvailable: true
+      };
+      mockVersionService.versionInfo$.next(versionInfo);
+      expect(component.showNotification).toBe(false);
     });
   });
 
-  it('calls refreshApp when Update Now button is clicked', async () => {
-    const { fixture, pollSubject, mockVersionService } = await createComponent();
-    const versionInfo: VersionInfo = {
-      current: '1.0.0',
-      latest: '2.0.0',
-      updateAvailable: true
-    };
-    pollSubject.next(versionInfo);
-    fixture.detectChanges();
+  describe('dismiss()', () => {
+    it('should set showNotification to false and store latest version in localStorage', () => {
+      const versionInfo: VersionInfo = {
+        current: '1.0.0',
+        latest: '2.0.0',
+        updateAvailable: true
+      };
+      // First make the component receive an update
+      mockVersionService.versionInfo$.next(versionInfo);
 
-    const updateButton = await vi.waitFor(() => {
-      const btn = fixture.debugElement.query(By.css('.update-btn'));
-      if (!btn) throw new Error('Update button not found');
-      return btn;
+      fixture.detectChanges();
+
+      expect(component.showNotification).toBe(true);
+      expect(component.versionInfo).toEqual(versionInfo);
+
+      component.dismiss();
+
+      expect(component.showNotification).toBe(false);
+      expect(localStorage.getItem(mockStorageKey)).toBe('2.0.0');
     });
-    updateButton.nativeElement.click();
-    expect(mockVersionService.refreshApp).toHaveBeenCalled();
+
+    it('should not store anything if versionInfo.latest is null/undefined', () => {
+      // Simulate error case where latest is null
+      const versionInfo: VersionInfo = {
+        current: '1.0.0',
+        latest: null,
+        updateAvailable: false
+      };
+      mockVersionService.versionInfo$.next(versionInfo);
+      component.dismiss();
+      expect(localStorage.getItem(mockStorageKey)).toBeNull();
+    });
   });
 
-  it('dismisses notification and stores version in localStorage', async () => {
-    const { fixture, pollSubject } = await createComponent();
-    const versionInfo: VersionInfo = {
-      current: '1.0.0',
-      latest: '2.0.0',
-      updateAvailable: true
-    };
-    pollSubject.next(versionInfo);
-    fixture.detectChanges();
-
-    const dismissButton = await vi.waitFor(() => {
-      const btn = fixture.debugElement.query(By.css('.dismiss-btn'));
-      if (!btn) throw new Error('Dismiss button not found');
-      return btn;
+  describe('refresh()', () => {
+    it('should call service.refreshApp', () => {
+      component.refresh();
+      expect(mockVersionService.refreshApp).toHaveBeenCalledTimes(1);
     });
+  });
 
-    dismissButton.nativeElement.click();
-    fixture.detectChanges();
-
-    await vi.waitFor(() => {
-      const notification = fixture.debugElement.query(By.css('.update-notification'));
-      expect(notification).toBeNull();
+  describe('cleanup (ngOnDestroy)', () => {
+    it('should unsubscribe from subscription', () => {
+      const unsubscribeSpy = vi.spyOn(component['subscription']!, 'unsubscribe');
+      component.ngOnDestroy();
+      expect(unsubscribeSpy).toHaveBeenCalled();
     });
-    expect(localStorage.getItem('ngx_update_dismissed')).toBe('2.0.0');
   });
 });
