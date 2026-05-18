@@ -38,10 +38,14 @@ export class VersionCheckService implements OnDestroy {
     // Check if the Service Worker is enabled in the consuming app
     if (this.swUpdate?.isEnabled) {
 
-      from(this.swUpdate.checkForUpdate()).subscribe(() => {
+      from(this.swUpdate.checkForUpdate())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
 
         // Listen for version updates from the Service Worker
-        this.swUpdate.versionUpdates.subscribe(event => {
+        this.swUpdate.versionUpdates
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(event => {
           if (event.type === 'VERSION_READY') {
             const latestVersion = event.latestVersion.hash; // You can also use event.latestVersion.appData if you include version info there
             const versionInfo: VersionInfo = {
