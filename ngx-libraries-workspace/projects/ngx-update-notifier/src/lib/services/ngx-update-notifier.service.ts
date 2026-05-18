@@ -49,13 +49,11 @@ export class VersionCheckService implements OnDestroy {
         }
       });
 
-      // Your logic for PWA update flow using this.swUpdate.versionUpdates
       console.log('[ngx-update-notifier] PWA mode active. Listening for Service Worker updates.');
     } else {
 
       this.pollForUpdates(); // Start HTTP polling if Service Worker is not available
 
-      // Fallback to your existing HTTP polling logic
       console.log('[ngx-update-notifier] PWA mode inactive. Falling back to HTTP polling.');
     }
   }
