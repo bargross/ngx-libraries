@@ -5,7 +5,7 @@ import { Subject, Subscription, takeUntil } from 'rxjs';
 import { VersionInfo } from '../../models/version-info.model';
 import { AppVersionConfig } from '../../models/app-version-config.model';
 import { APP_VERSION } from '../../tokens/update-notifier-token';
-import { isNullEmptyOrWhitespace } from '../../utils/string-validator';
+import { isNullEmptyOrWhitespace } from '../../utils/string-is-null-or-whitespace-validator';
 import { AppVersionDefaults } from '../../constants/app-version-constants';
 
 @Component({
