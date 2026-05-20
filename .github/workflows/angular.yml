@@ -4,12 +4,12 @@ on:
   push:
     branches: [ main, develop ]
     tags:
-      - '*@*'               # Only tags containing '@' (our format)
+      - '*@*'               # tags like library@1.0.0
   pull_request:
     branches: [ main ]
 
 jobs:
-  test-and-build:
+  lint-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
@@ -35,21 +35,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Detect library only if tag matches our format
-      - name: Detect library from tag
-        if: startsWith(github.ref, 'refs/tags/')
-        id: detect
-        run: node scripts/detect-lib.js
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-
-      # Lint ALL libraries (on any push/tag/PR)
+      # Lint only real libraries (those with ng-package.json)
       - name: Lint all libraries
-        run: npm run lint:all
+        run: |
+          for lib in $(ls projects); do
+            if [ -f "projects/$lib/ng-package.json" ]; then
+              echo "✅ Linting $lib"
+              npx ng lint $lib --verbose || exit 1
+            else
+              echo "Skipping $lib (not a library)"
+            fi
+          done
 
-      # Run tests for ALL libraries (on any push/tag/PR)
-      - name: Run unit tests for all libraries
-        run: npm run test:ci   # assumes your test setup runs all projects
+      # Test only real libraries
+      - name: Run unit tests for libraries
+        run: |
+          for lib in $(ls projects); do
+            if [ -f "projects/$lib/ng-package.json" ]; then
+              echo "Testing $lib"
+              npx ng test $lib --watch=false --browsers=ChromeHeadless || exit 1
+            fi
+          done
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -57,33 +63,60 @@ jobs:
           name: coverage-report-${{ matrix.node-version }}
           path: ngx-libraries-workspace/coverage/
 
-      # Build only the detected library (on tag). No fallback – if build fails, job fails.
-      - name: Build the detected library
-        if: steps.detect.outputs.MATCHED_LIBRARY != ''
+  # Separate job for building & packaging – only on tags
+  build-and-package:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')   # 👈 only run on tag pushes
+    strategy:
+      matrix:
+        node-version: [20.x]   # single version for build (faster)
+    defaults:
+      run:
+        working-directory: ngx-libraries-workspace
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ngx-libraries-workspace/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect library from tag
+        id: detect
+        run: node detect-lib.js
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Build detected library
         run: |
           export LIBRARY="${{ steps.detect.outputs.MATCHED_LIBRARY }}"
           npm run build:lib
 
-      # Ensure the readme is packaged with the npm package
-      - name: Verify README was copied
+      - name: Verify README
         run: |
           if [ -f "dist/${{ steps.detect.outputs.MATCHED_LIBRARY }}/README.md" ]; then
-            echo "README.md found in package"
-            cat "dist/${{ steps.detect.outputs.MATCHED_LIBRARY }}/README.md" | head -n 5
+            echo "README.md found"
           else
-            echo "README.md not found – npm page may show no description"
+            echo "README.md missing – npm page will show no description"
+            exit 1
           fi
 
-      # Package only on tag
-      - name: Package library (on tag)
-        if: steps.detect.outputs.MATCHED_LIBRARY != ''
+      - name: Package library
         run: |
           cd dist/${{ steps.detect.outputs.MATCHED_LIBRARY }}
           npm pack
-          mv *.tgz ../../../../${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}.tgz
+          mv *.tgz ../../../${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}.tgz
 
-      - name: Upload release artifact (on tag)
-        if: steps.detect.outputs.MATCHED_LIBRARY != ''
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}
