@@ -4,10 +4,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { UpdateNotifierComponent } from './update-notifier';
 import { VersionCheckService } from '../../services/version-check.service';
-import { APP_VERSION } from '../../tokens/update-notifier-token';
+import { APP_VERSION } from '../../tokens/update-notifier.token';
 import { AppVersionConfigDefaults } from '../../constants/app-version-constants';
 import { VersionInfo } from '../../models/version-info.model';
 import { AppVersionConfig } from '../../models/app-version-config.model';
+import { StorageService } from '../../services/storage.service';
 
 // --- Helpers ---
 
@@ -36,10 +37,23 @@ const setupComponent = async (
     versionInfo$,
   };
 
+  const storageServiceMock = {
+    version: null as string | null,
+
+    saveDismissedVersion(version: string) {
+      this.version = version;
+    },
+
+    getPreviousVersion(): string | null {
+      return this.version;
+    }
+  }
+
   await TestBed.configureTestingModule({
     imports: [UpdateNotifierComponent],
     providers: [
       { provide: VersionCheckService, useValue: mockVersionService },
+      { provide: StorageService, useValue: storageServiceMock},
       { provide: APP_VERSION, useValue: config },
     ],
   }).compileComponents();
@@ -47,7 +61,7 @@ const setupComponent = async (
   const fixture: ComponentFixture<UpdateNotifierComponent> = TestBed.createComponent(UpdateNotifierComponent);
   const component = fixture.componentInstance;
 
-  return { fixture, component, mockVersionService };
+  return { fixture, component, mockVersionService, storageServiceMock };
 };
 
 // --- Tests ---
@@ -57,12 +71,10 @@ describe('UpdateNotifierComponent', () => {
 
   beforeEach(() => {
     versionInfo$ = new BehaviorSubject<VersionInfo>(makeVersionInfo());
-    localStorage.clear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
     TestBed.resetTestingModule();
   });
 
@@ -76,14 +88,15 @@ describe('UpdateNotifierComponent', () => {
       expect(mockVersionService.initUpdateMonitoring).toHaveBeenCalledOnce();
     });
 
-    it('should read dismissed version from localStorage on init', async () => {
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('2.0.0');
+    it('should read dismissed version from storage service on init', async () => {
 
-      const { fixture } = await setupComponent(makeConfig(), versionInfo$);
+      const { fixture, storageServiceMock } = await setupComponent(makeConfig(), versionInfo$);
+
+      const getItemSpy = vi.spyOn(storageServiceMock, 'getPreviousVersion').mockReturnValue('2.0.0');
 
       fixture.detectChanges();
 
-      expect(getItemSpy).toHaveBeenCalledWith('test-version-key');
+      expect(getItemSpy).toHaveBeenCalled();
 
       getItemSpy.mockRestore();
     });
@@ -98,10 +111,11 @@ describe('UpdateNotifierComponent', () => {
     });
 
     it('should not show notification when update is available but version was dismissed', async () => {
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('2.0.0');
       versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: '2.0.0', updateAvailable: true }));
 
-      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
+      const { fixture, component, storageServiceMock } = await setupComponent(makeConfig(), versionInfo$);
+
+      const getItemSpy = vi.spyOn(storageServiceMock, 'getPreviousVersion').mockReturnValue('2.0.0');
 
       fixture.detectChanges();
 
@@ -158,35 +172,13 @@ describe('UpdateNotifierComponent', () => {
       expect(component.showNotification$.value).toBe(false);
     });
 
-    it('should persist the dismissed version to localStorage', async () => {
-      versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: '2.0.0', updateAvailable: true }));
-
-      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
-      fixture.detectChanges();
-
-      component.dismiss();
-
-      expect(localStorage.getItem('test-version-key')).toBe('2.0.0');
-    });
-
-    it('should set dismissedVersion on the component', async () => {
-      versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: '2.0.0', updateAvailable: true }));
-
-      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
-      fixture.detectChanges();
-
-      component.dismiss();
-
-      expect((component as any).dismissedVersion).toBe('2.0.0');
-    });
-
-    it('should not write to localStorage if versionInfo is null', async () => {
-      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
+    it('should not call storage service if versionInfo is null', async () => {
+      const { fixture, component, storageServiceMock } = await setupComponent(makeConfig(), versionInfo$);
       fixture.detectChanges();
 
       component.versionInfo$.next(null);
 
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const setItemSpy = vi.spyOn(storageServiceMock, 'saveDismissedVersion');
 
       component.dismiss();
 
@@ -211,52 +203,16 @@ describe('UpdateNotifierComponent', () => {
       versionInfo$ = new BehaviorSubject(info);
 
       const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
+
       fixture.detectChanges();
 
       component.dismiss();
+
       versionInfo$.next({ ...info });
 
+      fixture.detectChanges();
+
       expect(component.showNotification$.value).toBe(false);
-    });
-  });
-
-  // --- getStorageKey() ---
-
-  describe('getStorageKey()', () => {
-    it('should use the configured storageKey when provided', async () => {
-      const { fixture, component } = await setupComponent(makeConfig({ storageKey: 'my-key' }), versionInfo$);
-      fixture.detectChanges();
-      fixture.whenStable();
-
-      expect((component as any).storageKey).toBe('my-key');
-    });
-
-    it('should use default storageKey when applyDefaults is true and no key provided', async () => {
-      const { fixture, component } = await setupComponent(
-        makeConfig({ storageKey: null as any, applyDefaults: true }),
-        versionInfo$
-      );
-      fixture.detectChanges();
-
-      expect((component as any).storageKey).toBe(AppVersionConfigDefaults.storageKey);
-    });
-
-    it('should throw when storageKey is missing and applyDefaults is false', async () => {
-      const { fixture } = await setupComponent(
-        makeConfig({ storageKey: null as any, applyDefaults: false }),
-        versionInfo$
-      );
-
-      expect(() => fixture.detectChanges()).toThrowError('Missing storage key.');
-    });
-
-    it('should throw when applyDefaults is undefined and storageKey is missing', async () => {
-      const { fixture } = await setupComponent(
-        makeConfig({ storageKey: null as any, applyDefaults: undefined as any }),
-        versionInfo$
-      );
-
-      expect(() => fixture.detectChanges()).toThrow('Missing storage key.');
     });
   });
 

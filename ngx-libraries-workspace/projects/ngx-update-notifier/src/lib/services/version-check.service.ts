@@ -1,15 +1,13 @@
 import { Inject, Injectable, OnDestroy, Optional, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { from, interval, Observable, of, Subject } from 'rxjs';
+import { interval, Observable, of, Subject } from 'rxjs';
 import { map, distinctUntilChanged, switchMap, catchError, startWith, takeUntil } from 'rxjs/operators';
-import { APP_VERSION } from '../tokens/update-notifier-token';
-import { VersionInfo } from '../models/version-info.model';
-import { AppVersionConfig } from '../models/app-version-config.model';
+import { VersionInfo, AppVersionConfig } from '../models';
 import { SwUpdate } from '@angular/service-worker';
 import { AppVersionConfigDefaults } from '../constants/app-version-constants';
-import { isNullOrUndefined } from '../utils/object-is-null-or-undefined-validator';
-import { isNullEmptyOrWhitespace } from '../utils/string-is-null-or-whitespace-validator';
+import { isNullOrUndefined, isNullEmptyOrWhitespace } from '../utils';
 import { Mode } from '../enums/mode.enum';
+import { APP_VERSION } from '../tokens';
 
 @Injectable({ providedIn: 'root' })
 export class VersionCheckService implements OnDestroy {
@@ -30,7 +28,7 @@ export class VersionCheckService implements OnDestroy {
     }
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -72,7 +70,7 @@ export class VersionCheckService implements OnDestroy {
     window.location.reload();
   }
 
-    /**
+  /**
    * Poll for new versions at specified interval (in milliseconds)
    */
   private pollForUpdates(): void {
@@ -110,11 +108,13 @@ export class VersionCheckService implements OnDestroy {
   }
 
   private getInterval(): number {
-    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && this.appVersionConfig.applyDefaults) {
+    let applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
+
+    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && applyDefaults) {
       return AppVersionConfigDefaults.intervalMs;
     }
 
-    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && this.appVersionConfig.applyDefaults === false) {
+    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && !applyDefaults) {
       throw Error("Missing interval value.");
     }
 
@@ -122,11 +122,13 @@ export class VersionCheckService implements OnDestroy {
   }
 
   private getCheckUrl(): string {
-    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && this.appVersionConfig.applyDefaults) {
+  let applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
+
+    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && applyDefaults) {
       return AppVersionConfigDefaults.checkUrl;
     }
 
-    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && this.appVersionConfig.applyDefaults === false) {
+    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && !applyDefaults) {
       throw Error("Missing interval endpoint url.");
     }
 

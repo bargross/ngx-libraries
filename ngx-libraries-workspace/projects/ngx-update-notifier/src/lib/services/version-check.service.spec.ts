@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { VersionCheckService } from './version-check.service';
-import { APP_VERSION } from '../tokens/update-notifier-token';
+import { APP_VERSION } from '../tokens/update-notifier.token';
 import { AppVersionConfigDefaults } from '../constants/app-version-constants';
 import { AppVersionConfig } from '../models/app-version-config.model';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
