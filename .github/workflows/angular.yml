@@ -17,7 +17,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ngx-library-workspace
+        working-directory: ngx-libraries-workspace
 
     steps:
       - name: Checkout code
@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: ngx-library-workspace/package-lock.json
+          cache-dependency-path: ngx-libraries-workspace/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.node-version }}
-          path: ngx-library-workspace/coverage/
+          path: ngx-libraries-workspace/coverage/
 
       # Build only the detected library (on tag). No fallback – if build fails, job fails.
       - name: Build the detected library
@@ -91,4 +91,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}
-          path: ngx-library-workspace/${{ steps.detect.outputs.MATCHED_LIBRARY }}-*.tgz
+          path: ngx-libraries-workspace/${{ steps.detect.outputs.MATCHED_LIBRARY }}-*.tgz
