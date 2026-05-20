@@ -56,6 +56,8 @@ jobs:
               npx ng test $lib --watch=false || exit 1
             fi
           done
+        env:
+          PLAYWRIGHT_CHROMIUM_LAUNCH_OPTIONS: '{"headless":true}'
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
