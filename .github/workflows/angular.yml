@@ -53,7 +53,7 @@ jobs:
           for lib in $(ls projects); do
             if [ -f "projects/$lib/ng-package.json" ]; then
               echo "Testing $lib"
-              npx ng test $lib --watch=false --browsers=ChromeHeadless || exit 1
+              npx ng test $lib --watch=false || exit 1
             fi
           done
 
@@ -75,7 +75,7 @@ jobs:
         working-directory: ngx-libraries-workspace
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
