@@ -117,7 +117,7 @@ jobs:
         run: |
           cd dist/${{ steps.detect.outputs.MATCHED_LIBRARY }}
           npm pack
-          mv *.tgz ../../../${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}.tgz
+          mv *.tgz ../../${{ steps.detect.outputs.MATCHED_LIBRARY }}-${{ steps.detect.outputs.MATCHED_VERSION }}.tgz
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
