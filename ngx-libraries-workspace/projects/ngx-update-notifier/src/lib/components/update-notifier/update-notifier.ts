@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { VersionInfo } from '../../models';
 import { StorageService, VersionCheckService } from '../../services';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'ngx-update-notifier',
   standalone: true,
   imports: [CommonModule],
@@ -15,15 +16,13 @@ import { StorageService, VersionCheckService } from '../../services';
 export class UpdateNotifierComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
-  private versionService = inject(VersionCheckService);
-  private storageService = inject(StorageService);
+  private versionService: VersionCheckService = inject(VersionCheckService);
+  private storageService: StorageService = inject(StorageService);
 
   private dismissedVersion: string | null = null
 
   public versionInfo$ = new BehaviorSubject<VersionInfo | null>(null);
   public showNotification$ = new BehaviorSubject<boolean>(false);
-
-  constructor() { }
 
   public ngOnInit() {
     this.dismissedVersion = this.storageService.getPreviousVersion();
@@ -32,13 +31,13 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
 
     this.versionService.versionInfo$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(info => {
-        let currentVersionInfo = info as VersionInfo;
+      .subscribe((info: VersionInfo) => {
+        const currentVersionInfo = info as VersionInfo;
         const versionInfo = { ...currentVersionInfo, current: this.dismissedVersion } as VersionInfo;
 
         this.versionInfo$.next(versionInfo);
 
-        let isNotSameVersion = this.dismissedVersion !== currentVersionInfo.latest;
+        const isNotSameVersion = this.dismissedVersion !== currentVersionInfo.latest;
         console.log(this.dismissedVersion, currentVersionInfo.latest, isNotSameVersion);
 
         this.showNotification$.next(currentVersionInfo.updateAvailable && isNotSameVersion);

@@ -3,9 +3,8 @@ import { BehaviorSubject } from 'rxjs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { UpdateNotifierComponent } from './update-notifier';
-import { VersionCheckService } from '../../services/version-check.service';
+import { VersionCheckService } from '../../services';
 import { APP_VERSION } from '../../tokens/update-notifier.token';
-import { AppVersionConfigDefaults } from '../../constants/app-version-constants';
 import { VersionInfo } from '../../models/version-info.model';
 import { AppVersionConfig } from '../../models/app-version-config.model';
 import { StorageService } from '../../services/storage.service';
@@ -113,9 +112,7 @@ describe('UpdateNotifierComponent', () => {
     it('should not show notification when update is available but version was dismissed', async () => {
       versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: '2.0.0', updateAvailable: true }));
 
-      const { fixture, component, storageServiceMock } = await setupComponent(makeConfig(), versionInfo$);
-
-      const getItemSpy = vi.spyOn(storageServiceMock, 'getPreviousVersion').mockReturnValue('2.0.0');
+      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
 
       fixture.detectChanges();
 
@@ -186,6 +183,7 @@ describe('UpdateNotifierComponent', () => {
     });
 
     it('should not write to localStorage if latest version is missing', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: undefined as any, updateAvailable: true }));
 
       const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
@@ -236,6 +234,7 @@ describe('UpdateNotifierComponent', () => {
       const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
       fixture.detectChanges();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const completeSpy = vi.spyOn((component as any).destroy$, 'complete');
       fixture.destroy();
 

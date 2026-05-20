@@ -30,6 +30,16 @@
             "tsConfig": "projects/ngx-update-notifier/tsconfig.spec.json",
             "browsers": ["chromium"]
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/ngx-update-notifier/**/*.ts",
+              "projects/ngx-update-notifier/**/*.html"
+            ],
+            "eslintConfig": "projects/ngx-update-notifier/eslint.config.js"
+          }
         }
       }
     },

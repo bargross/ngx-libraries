@@ -1,11 +1,14 @@
 <!-- TODO: change raw html elements to Material components -->
-<div class="update-notification" *ngIf="(showNotification$ | async) && (versionInfo$ | async)?.updateAvailable">
-  <div class="update-message" *ngIf="versionInfo$ | async as versionInfo">
-    <span>🔄 New version {{ versionInfo.latest }} is available!</span>
-    <span class="current-version">(Current: {{ versionInfo?.current }})</span>
-  </div>
-  <div class="update-actions">
-    <button class="update-btn" (click)="refresh()">Update Now</button>
-    <button class="dismiss-btn" (click)="dismiss()">Dismiss</button>
-  </div>
+<div class="update-notification">
+  @if ((showNotification$ | async) && (versionInfo$ | async)?.updateAvailable) {
+    @let versionInfo = (versionInfo$ | async);
+    <div class="update-message">
+      <span>🔄 New version {{ versionInfo?.latest }} is available!</span>
+      <span class="current-version">(Current: {{ versionInfo?.current }})</span>
+    </div>
+    <div class="update-actions">
+      <button class="update-btn" (click)="refresh()">Update Now</button>
+      <button class="dismiss-btn" (click)="dismiss()">Dismiss</button>
+    </div>
+  }
 </div>

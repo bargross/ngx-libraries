@@ -1,3 +1,4 @@
+/* eslint-disable @angular-eslint/prefer-inject */
 import { Inject, Injectable } from "@angular/core";
 import { AppVersionConfig } from "../models";
 import { isNullEmptyOrWhitespace } from "../utils";
@@ -26,7 +27,7 @@ export class StorageService {
 
 
   private getStorageKey(): string {
-    let applyDefaults = this.versionConfig?.applyDefaults === null || this.versionConfig?.applyDefaults === undefined ? false : this.versionConfig?.applyDefaults;
+    const applyDefaults = this.versionConfig?.applyDefaults === null || this.versionConfig?.applyDefaults === undefined ? false : this.versionConfig?.applyDefaults;
 
     if (isNullEmptyOrWhitespace(this.versionConfig?.storageKey) && applyDefaults) {
       return AppVersionConfigDefaults.storageKey;

@@ -66,7 +66,7 @@ describe('StorageService', () => {
     it('should set storageKey from config when provided', () => {
       const service = createService({ storageKey: 'my-key' });
 
-      let spyObj = vi.spyOn(storageMock, 'getItem');
+      const spyObj = vi.spyOn(storageMock, 'getItem');
 
       service.getPreviousVersion();
 
@@ -76,7 +76,7 @@ describe('StorageService', () => {
     ['', ' ', undefined].forEach( (key: string | undefined) => {
       it('should fall back to the default storageKey when applyDefaults is true and storageKey is invalid', () => {
         const service = createService({ storageKey: key, applyDefaults: true });
-        let spyObj = vi.spyOn(storageMock, 'getItem');
+        const spyObj = vi.spyOn(storageMock, 'getItem');
 
         service.getPreviousVersion();
 
@@ -86,24 +86,27 @@ describe('StorageService', () => {
 
     ['', ' ', null, undefined].forEach(key => {
       it('should throw when storageKey is invalid and applyDefaults is false', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect(() => createService({ storageKey: key as any, applyDefaults: false }))
           .toThrow('Missing storage key.');
       });
     });
 
     it('should treat applyDefaults as false when it is null', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(() => createService({ storageKey: null as any, applyDefaults: null as any }))
         .toThrow('Missing storage key.');
     });
 
     it('should treat applyDefaults as false when it is undefined', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(() => createService({ storageKey: undefined as any, applyDefaults: undefined as any }))
         .toThrow('Missing storage key.');
     });
 
     it('should prefer the explicit storageKey over the default even when applyDefaults is true', () => {
       const service = createService({ storageKey: 'explicit-key', applyDefaults: true });
-      let spyObj = vi.spyOn(storageMock, 'getItem');
+      const spyObj = vi.spyOn(storageMock, 'getItem');
 
       service.getPreviousVersion();
 

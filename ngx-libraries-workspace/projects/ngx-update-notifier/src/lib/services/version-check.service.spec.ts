@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -475,6 +476,7 @@ describe('VersionCheckService', () => {
   describe('refreshApp()', () => {
     it('should call refreshApp on the service', () => {
       const { service } = setupService(makeConfig());
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       const refreshSpy = vi.spyOn(service, 'refreshApp').mockImplementation(() => {});
 
       service.refreshApp();

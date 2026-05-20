@@ -1,3 +1,4 @@
+/* eslint-disable @angular-eslint/prefer-inject */
 import { Inject, Injectable, OnDestroy, Optional, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { interval, Observable, of, Subject } from 'rxjs';
@@ -12,10 +13,11 @@ import { APP_VERSION } from '../tokens';
 @Injectable({ providedIn: 'root' })
 export class VersionCheckService implements OnDestroy {
   private destroy$ = new Subject<void>();
-  private http = inject(HttpClient);
   private appVersionConfig: AppVersionConfig; // Will be injected at build time
 
   public versionInfo$ = new Subject<VersionInfo>();
+
+  private http = inject(HttpClient);
 
   constructor(
     @Inject(APP_VERSION) versionConfig: AppVersionConfig,
@@ -74,8 +76,8 @@ export class VersionCheckService implements OnDestroy {
    * Poll for new versions at specified interval (in milliseconds)
    */
   private pollForUpdates(): void {
-    let checkInterval = this.getInterval();
-    let checkUrl = this.getCheckUrl();
+    const checkInterval = this.getInterval();
+    const checkUrl = this.getCheckUrl();
 
     interval(checkInterval).pipe(
       startWith(0), // Check immediately on subscribe
@@ -108,7 +110,7 @@ export class VersionCheckService implements OnDestroy {
   }
 
   private getInterval(): number {
-    let applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
+    const applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
 
     if (isNullOrUndefined(this.appVersionConfig.checkInterval) && applyDefaults) {
       return AppVersionConfigDefaults.intervalMs;
@@ -122,7 +124,7 @@ export class VersionCheckService implements OnDestroy {
   }
 
   private getCheckUrl(): string {
-  let applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
+    const applyDefaults = !this.appVersionConfig?.applyDefaults ? false : this.appVersionConfig?.applyDefaults;
 
     if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && applyDefaults) {
       return AppVersionConfigDefaults.checkUrl;
