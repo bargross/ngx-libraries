@@ -37,10 +37,7 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
 
         this.versionInfo$.next(versionInfo);
 
-        const isNotSameVersion = this.dismissedVersion !== currentVersionInfo.latest;
-        console.log(this.dismissedVersion, currentVersionInfo.latest, isNotSameVersion);
-
-        this.showNotification$.next(currentVersionInfo.updateAvailable && isNotSameVersion);
+        this.showNotification$.next(currentVersionInfo.updateAvailable && this.dismissedVersion !== currentVersionInfo.latest);
       });
   }
 

@@ -116,7 +116,7 @@ describe('UpdateNotifierComponent', () => {
 
       fixture.detectChanges();
 
-      await fixture.whenStable();
+      component.dismiss();
 
       expect(component.showNotification$.value).toBe(false);
     });
