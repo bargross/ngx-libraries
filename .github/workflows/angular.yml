@@ -40,8 +40,8 @@ jobs:
         run: |
           for lib in $(ls projects); do
             if [ -f "projects/$lib/ng-package.json" ]; then
-              echo "✅ Linting $lib"
-              npx ng lint $lib --verbose || exit 1
+              echo "Linting $lib"
+              npx ng lint $lib || exit 1
             else
               echo "Skipping $lib (not a library)"
             fi
