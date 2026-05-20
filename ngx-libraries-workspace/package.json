@@ -8,7 +8,7 @@
     "build:lib": "ng build $LIBRARY",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "npx ng test --watch=false --browsers=chromium",
+    "test:ci": "npx ng test --watch=false",
     "lint:all": "for lib in projects/*; do npx ng lint ${lib##*/}; done",
     "lint": "ng lint"
   },
