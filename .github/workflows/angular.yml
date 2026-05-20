@@ -45,13 +45,7 @@ jobs:
 
       # Lint ALL libraries (on any push/tag/PR)
       - name: Lint all libraries
-        run: |
-          for lib in $(ls projects); do
-            if [ -f "projects/$lib/package.json" ]; then
-              echo "Linting $lib"
-              ng lint $lib
-            fi
-          done
+        run: npm run lint:all
 
       # Run tests for ALL libraries (on any push/tag/PR)
       - name: Run unit tests for all libraries
@@ -66,7 +60,9 @@ jobs:
       # Build only the detected library (on tag). No fallback – if build fails, job fails.
       - name: Build the detected library
         if: steps.detect.outputs.MATCHED_LIBRARY != ''
-        run: ng build ${{ steps.detect.outputs.MATCHED_LIBRARY }}
+        run: |
+          export LIBRARY="${{ steps.detect.outputs.MATCHED_LIBRARY }}"
+          npm run build:lib
 
       # Ensure the readme is packaged with the npm package
       - name: Verify README was copied

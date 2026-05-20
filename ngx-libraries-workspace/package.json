@@ -5,10 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "node scripts/update-version.js && ng build",
+    "build:lib": "ng build $LIBRARY",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "vitest run --reporter=dot",
-    "serve:ssr:test-app": "node dist/test-app/server/server.mjs"
+    "test:ci": "npx ng test --watch=false --browsers=ChromeHeadless",
+    "lint:all": "for lib in projects/*; do npx ng lint ${lib##*/}; done"
   },
   "private": true,
   "packageManager": "npm@10.8.2",
