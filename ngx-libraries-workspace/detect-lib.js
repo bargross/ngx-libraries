@@ -18,7 +18,7 @@ if (atIndex === -1) {
 const libName = tag.substring(0, atIndex);
 const tagVersion = tag.substring(atIndex + 1);
 
-const pkgPath = path.join(__dirname, '../projects', libName, 'package.json');
+const pkgPath = path.join(__dirname, 'projects', libName, 'package.json');
 if (!fs.existsSync(pkgPath)) {
   console.error(`Library "${libName}" not found`);
   process.exit(1);
