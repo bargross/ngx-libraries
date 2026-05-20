@@ -6,7 +6,9 @@ import { APP_VERSION } from '../tokens/update-notifier-token';
 import { VersionInfo } from '../models/version-info.model';
 import { AppVersionConfig } from '../models/app-version-config.model';
 import { SwUpdate } from '@angular/service-worker';
-import { AppVersionDefaults } from '../constants/app-version-constants';
+import { AppVersionConfigDefaults } from '../constants/app-version-constants';
+import { isNullOrUndefined } from '../utils/object-is-null-or-undefined-validator';
+import { isNullEmptyOrWhitespace } from '../utils/string-is-null-or-whitespace-validator';
 
 @Injectable({ providedIn: 'root' })
 export class VersionCheckService implements OnDestroy {
@@ -17,10 +19,14 @@ export class VersionCheckService implements OnDestroy {
   public versionInfo$ = new Subject<VersionInfo>();
 
   constructor(
-    @Inject(APP_VERSION) version: AppVersionConfig,
+    @Inject(APP_VERSION) versionConfig: AppVersionConfig,
     @Optional() private swUpdate: SwUpdate,
   ) {
-    this.appVersionConfig = version;
+    this.appVersionConfig = versionConfig;
+
+    if (versionConfig.applyDefaults === null || versionConfig.applyDefaults === undefined) {
+      this.appVersionConfig.applyDefaults = false;
+    }
   }
 
   ngOnDestroy() {
@@ -69,11 +75,12 @@ export class VersionCheckService implements OnDestroy {
    * Poll for new versions at specified interval (in milliseconds)
    */
   private pollForUpdates(): void {
-    let checkInterval = this.appVersionConfig.checkInterval ?? AppVersionDefaults.intervalMs;
+    let checkInterval = this.getInterval();
+    let checkUrl = this.getCheckUrl();
 
     interval(checkInterval).pipe(
       startWith(0), // Check immediately on subscribe
-      switchMap(() => this.checkForUpdate()),
+      switchMap(() => this.checkForUpdate(checkUrl)),
       distinctUntilChanged((prev, curr) => prev.latest === curr.latest),
       takeUntil(this.destroy$)
     ).subscribe({
@@ -85,9 +92,7 @@ export class VersionCheckService implements OnDestroy {
   /**
    * Single check for update
    */
-  private checkForUpdate(): Observable<VersionInfo> {
-    let checkUrl = this.appVersionConfig.endpointUrl ?? AppVersionDefaults.checkUrl;
-
+  private checkForUpdate(checkUrl: string): Observable<VersionInfo> {
     return this.http.get<{ version: string }>(checkUrl, { cache: 'no-store' })
     .pipe(
       map(response => ({
@@ -101,5 +106,29 @@ export class VersionCheckService implements OnDestroy {
         updateAvailable: false
       } as VersionInfo))
     );
+  }
+
+  private getInterval(): number {
+    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && this.appVersionConfig.applyDefaults) {
+      return AppVersionConfigDefaults.intervalMs;
+    }
+
+    if (isNullOrUndefined(this.appVersionConfig.checkInterval) && this.appVersionConfig.applyDefaults === false) {
+      throw Error("Missing interval value.");
+    }
+
+    return this.appVersionConfig.checkInterval as number;
+  }
+
+  private getCheckUrl(): string {
+    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && this.appVersionConfig.applyDefaults) {
+      return AppVersionConfigDefaults.checkUrl;
+    }
+
+    if (isNullEmptyOrWhitespace(this.appVersionConfig.endpointUrl) && this.appVersionConfig.applyDefaults === false) {
+      throw Error("Missing interval endpoint url.");
+    }
+
+    return this.appVersionConfig.endpointUrl as string;
   }
 }

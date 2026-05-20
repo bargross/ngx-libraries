@@ -1,6 +1,5 @@
-
 <!-- TODO: change raw html elements to Material components -->
-<div class="update-notification" *ngIf="showNotification && versionInfo?.updateAvailable">
+<div class="update-notification" *ngIf="(showNotification$ | async) && versionInfo?.updateAvailable">
   <div class="update-message">
     🔄 New version {{ versionInfo.latest }} is available!
     <span class="current-version">(Current: {{ versionInfo.current }})</span>
