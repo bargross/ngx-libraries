@@ -9,6 +9,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { AppVersionConfigDefaults } from '../constants/app-version-constants';
 import { isNullOrUndefined } from '../utils/object-is-null-or-undefined-validator';
 import { isNullEmptyOrWhitespace } from '../utils/string-is-null-or-whitespace-validator';
+import { Mode } from '../enums/mode.enum';
 
 @Injectable({ providedIn: 'root' })
 export class VersionCheckService implements OnDestroy {
@@ -36,7 +37,7 @@ export class VersionCheckService implements OnDestroy {
 
   public initUpdateMonitoring(): void {
     // Check if the Service Worker is enabled in the consuming app
-    if (this.swUpdate?.isEnabled) {
+    if (this.appVersionConfig.mode === Mode.SW && this.swUpdate?.isEnabled) {
 
         // Listen for version updates from the Service Worker
       this.swUpdate.versionUpdates

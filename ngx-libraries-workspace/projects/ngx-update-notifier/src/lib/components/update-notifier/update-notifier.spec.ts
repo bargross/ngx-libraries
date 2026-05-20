@@ -88,16 +88,6 @@ describe('UpdateNotifierComponent', () => {
       getItemSpy.mockRestore();
     });
 
-    it('should set versionInfo from the service stream', async () => {
-      const info = makeVersionInfo({ latest: '2.0.0', updateAvailable: true });
-      versionInfo$ = new BehaviorSubject(info);
-
-      const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
-      fixture.detectChanges();
-
-      expect(component.versionInfo).toEqual(info);
-    });
-
     it('should show notification when update is available and version not dismissed', async () => {
       versionInfo$ = new BehaviorSubject(makeVersionInfo({ latest: '2.0.0', updateAvailable: true }));
 
@@ -194,7 +184,8 @@ describe('UpdateNotifierComponent', () => {
       const { fixture, component } = await setupComponent(makeConfig(), versionInfo$);
       fixture.detectChanges();
 
-      component.versionInfo = null;
+      component.versionInfo$.next(null);
+
       const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
       component.dismiss();

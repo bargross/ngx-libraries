@@ -31,6 +31,12 @@
     },
     {
       "path": "./projects/ngx-update-notifier/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/test-app/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/test-app/tsconfig.spec.json"
     }
   ]
 }

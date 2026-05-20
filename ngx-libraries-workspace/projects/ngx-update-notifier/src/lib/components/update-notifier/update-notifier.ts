@@ -7,12 +7,13 @@ import { AppVersionConfig } from '../../models/app-version-config.model';
 import { APP_VERSION } from '../../tokens/update-notifier-token';
 import { isNullEmptyOrWhitespace } from '../../utils/string-is-null-or-whitespace-validator';
 import { AppVersionConfigDefaults } from '../../constants/app-version-constants';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'ngx-update-notifier',
   standalone: true,
-  imports: [],
-  template: './update-notifier.html',
+  imports: [CommonModule],
+  templateUrl: './update-notifier.html',
   styleUrl: './update-notifier.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -23,7 +24,7 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
   private dismissedVersion: string | null = null
   private storageKey: string = '';
 
-  public versionInfo: VersionInfo | null = null;
+  public versionInfo$ = new BehaviorSubject<VersionInfo | null>(null);
   public showNotification$ = new BehaviorSubject<boolean>(false);
 
   constructor(
@@ -38,26 +39,29 @@ export class UpdateNotifierComponent implements OnInit, OnDestroy {
     this.versionService.initUpdateMonitoring();
 
     this.versionService.versionInfo$
-    .pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(info => {
-      this.versionInfo = info;
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(info => {
+        const versionInfo = { ...info, current: this.dismissedVersion } as VersionInfo;
 
-      this.showNotification$.next(info.updateAvailable && this.dismissedVersion !== info.latest);
-    });
+        this.versionInfo$.next(versionInfo);
+
+        this.showNotification$.next(info.updateAvailable && this.dismissedVersion !== info.latest);
+      });
   }
 
   public refresh() {
+    this.dismiss();
+
     this.versionService.refreshApp();
   }
 
   public dismiss() {
     this.showNotification$.next(false);
 
-    if (this.versionInfo?.latest) {
-      this.dismissedVersion = this.versionInfo.latest;
+    if (this.versionInfo$.value?.latest) {
+      this.dismissedVersion = this.versionInfo$.value.latest;
 
-      localStorage.setItem(this.storageKey as string, this.versionInfo.latest);
+      localStorage.setItem(this.storageKey as string, this.versionInfo$.value.latest);
     }
   }
 
