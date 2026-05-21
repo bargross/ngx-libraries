@@ -17,6 +17,7 @@ import {
   tap,
 } from 'rxjs/operators';
 import { PaginationConfig, PaginationParams, HttpRequestConfig } from '../models';
+import { isNullEmptyOrWhitespace } from '../utils';
 
 @Injectable()
 export class DataStreamBuilderService {
@@ -171,8 +172,10 @@ export class DataStreamBuilderService {
       if (method === 'GET') {
         // Add filters as individual query params
         Object.entries(params.filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            queryParams[`${filterParam}[${key}]`] = String(value);
+          const paramValue = String(value);
+
+          if (!isNullEmptyOrWhitespace(paramValue)) {
+            queryParams[`${filterParam}[${key}]`] = paramValue;
           }
         });
       }
@@ -196,9 +199,9 @@ export class DataStreamBuilderService {
    * Compares two PaginationParams objects for equality
    */
   private areParamsEqual(a: PaginationParams, b: PaginationParams): boolean {
-    return a.page === b.page &&
-           a.size === b.size &&
-           JSON.stringify(a.sort) === JSON.stringify(b.sort) &&
-           JSON.stringify(a.filters) === JSON.stringify(b.filters);
+    return a.page === b.page
+      && a.size === b.size
+      && JSON.stringify(a.sort) === JSON.stringify(b.sort)
+      && JSON.stringify(a.filters) === JSON.stringify(b.filters);
   }
 }
