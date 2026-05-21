@@ -19,7 +19,7 @@ import {
 import { PaginationConfig, PaginationParams, HttpRequestConfig } from '../models';
 
 @Injectable()
-export class DataStreamService {
+export class DataStreamBuilderService {
   private http = inject(HttpClient);
 
   /**

@@ -1,3 +1,3 @@
-export { DataStreamService } from './data-stream.service';
+export { DataStreamBuilderService } from './data-stream-builder.service';
 export { PaginatedHttpService } from './paginated-http.service';
-export { ParamStreamBuilderService } from './params-stream-buidler.service';
+export { ParamStreamService } from './params-stream.service';

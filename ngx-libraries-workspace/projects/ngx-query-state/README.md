@@ -1,64 +1,27 @@
-# NgxQueryState
+# ngx-query-state
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.0.
+[![npm version](https://img.shields.io/npm/v/ngx-query-state.svg)](https://www.npmjs.com/package/ngx-query-state)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Angular](https://img.shields.io/badge/Angular-%3E%3D15.0.0-red)](https://angular.io)
 
-## Code scaffolding
+**Reactive state management for paginated HTTP data in Angular.**
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+`ngx-query-state` is a lightweight, RxJS-first library that eliminates pagination boilerplate. It manages loading states, errors, sorting, filtering, and caching – so you can focus on building your UI.
 
-```bash
-ng generate component component-name
-```
+## ✨ Features
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- 🚀 **Zero boilerplate** – One configuration, fully reactive state
+- 📄 **Smart pagination** – Page, size, sorting, and filters as observables
+- ⚡ **Built-in debouncing** – Prevents excessive HTTP requests
+- 🎯 **Type-safe** – Full TypeScript support with generics
+- 🧩 **Flexible API mapping** – Works with any backend structure
+- 💾 **Optional caching** – Configurable cache timeout
+- 🔄 **Auto-reset** – Automatically resets to page 1 when filters/sort change
+- 🧪 **Easily testable** – Pure RxJS streams
+- 📦 **Zero UI dependencies** – Bring your own table/pagination components
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the library, run:
-
-```bash
-ng build ngx-query-state
-```
-
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
-
-### Publishing the Library
-
-Once the project is built, you can publish your library by following these steps:
-
-1. Navigate to the `dist` directory:
-
-   ```bash
-   cd dist/ngx-query-state
-   ```
-
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## 📦 Installation
 
 ```bash
-ng test
+npm install ngx-query-state
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

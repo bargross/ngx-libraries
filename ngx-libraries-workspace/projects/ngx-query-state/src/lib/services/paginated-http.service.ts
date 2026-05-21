@@ -1,123 +1,104 @@
-// services/paginated-http.service.ts
+// services/paginated-http.service.ts (excerpt showing integration)
 import { Injectable, inject } from '@angular/core';
+import { PaginationConfig, PaginatedInstance, PaginatedActions } from '../models';
+import { DataStreamBuilderService } from './data-stream-builder.service';
+import { ParamStreamService } from './params-stream.service';
 import { BehaviorSubject } from 'rxjs';
-import { DataStreamService } from './data-stream.service';
-import { ParamStreamBuilderService } from './params-stream-buidler.service';
-import {
-  PaginationConfig,
-  PaginatedInstance,
-  PaginatedActions
-} from '../models';
-import { PaginationState } from '../models/pagination-state.model';
 
 @Injectable({ providedIn: 'root' })
 export class PaginatedHttpService {
-  private dataStreamService = inject(DataStreamService);
-  private paramStreamBuilderService = inject(ParamStreamBuilderService);
+  private dataStreamBuilder = inject(DataStreamBuilderService);
+  private paramStreamService = inject(ParamStreamService);
 
-  /**
-   * Creates a new paginated data source instance
-   */
   create<T>(config: PaginationConfig<T>): PaginatedInstance<T> {
-    // Validate required config
-    if (!config.url) {
-      throw new Error('PaginatedHttpService: url is required in configuration');
-    }
-
-    // Merge with defaults
+    // Merge defaults
     const mergedConfig = {
-      method: 'GET',
-      pageParam: 'page',
-      sizeParam: 'size',
-      sortParam: 'sort',
-      filterParam: 'filters',
-      debounceTime: 300,
-      cacheTimeout: 0,
-      withCredentials: false,
       initialPage: 1,
       initialPageSize: 10,
       ...config
-    } as PaginationConfig;
+    };
 
-    // Create parameter streams
-    const paramStreams = this.paramStreamBuilderService.createParameterStreams(
+    // Create parameter streams using ParamStreamService
+    const paramStreams = this.paramStreamService.createParameterStreams(
       mergedConfig.initialPage,
       mergedConfig.initialPageSize
     );
 
-    // Create loading and error subjects
+    // Create loading/error subjects
     const loadingSubject = new BehaviorSubject<boolean>(false);
     const errorSubject = new BehaviorSubject<string | null>(null);
 
-    // Build data stream
-    const data$ = this.dataStreamService.buildDataStream(
-      paramStreams.combinedParams$,
+    // Build data stream using the combined parameters
+    const data$ = this.dataStreamBuilder.buildDataStream(
+      paramStreams.combinedParams$,  // <-- From ParamStreamService
       mergedConfig,
       loadingSubject,
       errorSubject
     );
 
-    // Build total count stream (if totalMapper is provided)
+    // Build total count stream (uses filters from paramStreams)
     const totalCount$ = mergedConfig.totalMapper
-      ? this.dataStreamService.buildTotalCountStream(
-          paramStreams.filters$,
-          paramStreams.refreshTrigger$,
+      ? this.dataStreamBuilder.buildTotalCountStream(
+          paramStreams.filters$,      // <-- From ParamStreamService
+          paramStreams.refreshTrigger$, // <-- From ParamStreamService
           mergedConfig
         )
       : new BehaviorSubject<number>(0);
 
-    // Expose state as observables
-    const state = {
-      data$,
-      loading$: loadingSubject.asObservable(),
-      error$: errorSubject.asObservable(),
-      totalCount$,
-      pageNumber$: paramStreams.pageNumber$.asObservable(),
-      pageSize$: paramStreams.pageSize$.asObservable(),
-      sortBy$: paramStreams.sort$.asObservable(),
-      filters$: paramStreams.filters$.asObservable()
-    } as PaginationState<T>;
-
-    // Create actions
+    // Actions update the subjects created by ParamStreamService
     const actions: PaginatedActions = {
       setPage(page: number) {
         if (page < 1) return;
-        paramStreams.pageNumber$.next(page);
+        paramStreams.pageNumberSubject.next(page);  // <-- Updates subject
       },
 
       setPageSize(size: number) {
         if (size < 1) return;
-        paramStreams.pageSize$.next(size);
-        paramStreams.pageNumber$.next(1);
+        paramStreams.pageSizeSubject.next(size);
+        paramStreams.pageNumberSubject.next(1); // Reset to first page
       },
 
-      setSort(column: string, direction: 'asc' | 'desc') {
-        paramStreams.sort$.next({ column, direction });
-        paramStreams.pageNumber$.next(1);
+      setSort(column: string, direction: 'asc' | 'desc'){
+        paramStreams.sortSubject.next({ column, direction });
+        paramStreams.pageNumberSubject.next(1); // Reset to first page
       },
 
       setFilters(filters: Record<string, unknown>) {
-        paramStreams.filters$.next(filters);
-        paramStreams.pageNumber$.next(1);
+        paramStreams.filtersSubject.next(filters);
+        paramStreams.pageNumberSubject.next(1); // Reset to first page
       },
 
       refresh() {
-        paramStreams.refreshTrigger$.next();
+        paramStreams.refreshTriggerSubject.next();
       },
 
       reset() {
-        paramStreams.pageNumber$.next(mergedConfig.initialPage as number);
-        paramStreams.pageSize$.next(mergedConfig.initialPageSize as number);
-        paramStreams.sort$.next(null);
-        paramStreams.filters$.next({});
-        paramStreams.refreshTrigger$.next();
+        paramStreams.pageNumberSubject.next(mergedConfig.initialPage);
+        paramStreams.pageSizeSubject.next(mergedConfig.initialPageSize);
+        paramStreams.sortSubject.next(null);
+        paramStreams.filtersSubject.next({});
+        paramStreams.refreshTriggerSubject.next();
       },
 
       clearCache() {
-        paramStreams.refreshTrigger$.next();
+        // Trigger a refresh which will bypass cache
+        paramStreams.refreshTriggerSubject.next();
       }
     };
 
-    return { state, actions };
+    // Return state and actions
+    return {
+      state: {
+        data$,
+        loading$: loadingSubject.asObservable(),
+        error$: errorSubject.asObservable(),
+        totalCount$,
+        pageNumber$: paramStreams.pageNumber$,
+        pageSize$: paramStreams.pageSize$,
+        sortBy$: paramStreams.sort$,
+        filters$: paramStreams.filters$
+      },
+      actions
+    };
   }
 }
