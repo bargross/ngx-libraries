@@ -33,11 +33,8 @@ The library is fully tested with Vitest and includes a standalone component, con
 This monorepo is actively maintained; the first package is published and documented.
 
 ## Roadmap
-- Q3 2025 – Add configuration tokens to ngx-update-notifier (custom endpoint, polling interval, storage key).
-
-- Q4 2025 – Publish second library: ngx-safe-http (a wrapper for HTTP requests with retry and offline queue).
-
-- 2026 – Expand with more Angular utilities (form helpers, scroll directives, lazy image loader).
+- Q2 2026 - Add pagination http interface for pagination APIs. 
+- Q3 2026 – Add configuration tokens to ngx-update-notifier (custom endpoint, polling interval, storage key).
 
 ## License
 
