@@ -59,19 +59,22 @@ export class ParamStreamService {
     );
 
     return {
-      // Subjects (for internal updates via actions)
-      pageNumberSubject,
-      pageSizeSubject,
-      sortSubject,
-      filtersSubject,
-      refreshTriggerSubject,
+      internal: {
+        pageNumberSubject,
+        pageSizeSubject,
+        sortSubject,
+        filtersSubject,
+        refreshTriggerSubject,
+      },
 
-      // Observables (for reading state)
-      pageNumber$,
-      pageSize$,
-      sort$,
-      filters$,
-      refreshTrigger$,
+      readOnly: {
+        // Observables (for reading state)
+        pageNumber$,
+        pageSize$,
+        sort$,
+        filters$,
+        refreshTrigger$,
+      },
 
       // Combined stream (for data fetching)
       combinedParams$
@@ -99,7 +102,8 @@ export class ParamStreamService {
     } else {
       // Both non-null - compare properties
       if (aSort.column !== bSort.column) return false;
-      if (aSort.direction !== bSort.direction) return false;
+
+      if (aSort.order !== bSort.order) return false;
     }
 
     // Check filters (deep comparison using JSON.stringify)

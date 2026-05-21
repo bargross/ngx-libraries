@@ -39,66 +39,67 @@ export class PaginatedHttpService {
     // Build total count stream (uses filters from paramStreams)
     const totalCount$ = mergedConfig.totalMapper
       ? this.dataStreamBuilder.buildTotalCountStream(
-          paramStreams.filters$,      // <-- From ParamStreamService
-          paramStreams.refreshTrigger$, // <-- From ParamStreamService
+          paramStreams.readOnly.filters$,      // <-- From ParamStreamService
+          paramStreams.readOnly.refreshTrigger$, // <-- From ParamStreamService
           mergedConfig
         )
       : new BehaviorSubject<number>(0);
 
-    // Actions update the subjects created by ParamStreamService
-    const actions: PaginatedActions = {
-      setPage(page: number) {
-        if (page < 1) return;
-        paramStreams.pageNumberSubject.next(page);  // <-- Updates subject
-      },
-
-      setPageSize(size: number) {
-        if (size < 1) return;
-        paramStreams.pageSizeSubject.next(size);
-        paramStreams.pageNumberSubject.next(1); // Reset to first page
-      },
-
-      setSort(column: string, direction: 'asc' | 'desc'){
-        paramStreams.sortSubject.next({ column, direction });
-        paramStreams.pageNumberSubject.next(1); // Reset to first page
-      },
-
-      setFilters(filters: Record<string, unknown>) {
-        paramStreams.filtersSubject.next(filters);
-        paramStreams.pageNumberSubject.next(1); // Reset to first page
-      },
-
-      refresh() {
-        paramStreams.refreshTriggerSubject.next();
-      },
-
-      reset() {
-        paramStreams.pageNumberSubject.next(mergedConfig.initialPage);
-        paramStreams.pageSizeSubject.next(mergedConfig.initialPageSize);
-        paramStreams.sortSubject.next(null);
-        paramStreams.filtersSubject.next({});
-        paramStreams.refreshTriggerSubject.next();
-      },
-
-      clearCache() {
-        // Trigger a refresh which will bypass cache
-        paramStreams.refreshTriggerSubject.next();
-      }
-    };
-
-    // Return state and actions
-    return {
-      state: {
+    const state = {
         data$,
         loading$: loadingSubject.asObservable(),
         error$: errorSubject.asObservable(),
         totalCount$,
-        pageNumber$: paramStreams.pageNumber$,
-        pageSize$: paramStreams.pageSize$,
-        sortBy$: paramStreams.sort$,
-        filters$: paramStreams.filters$
-      },
-      actions
+        pageNumber$: paramStreams.readOnly.pageNumber$,
+        pageSize$: paramStreams.readOnly.pageSize$,
+        sortBy$: paramStreams.readOnly.sort$,
+        filters$: paramStreams.readOnly.filters$
     };
+
+    // Actions update the subjects created by ParamStreamService
+    const actions: PaginatedActions = {
+      setPage(page: number) {
+        if (page < 1) throw Error(`Invalid page number ${page}`);
+
+        paramStreams.internal.pageNumberSubject.next(page);  // <-- Updates subject
+      },
+
+      setPageSize(size: number) {
+        if (size < 1) throw Error(`Invalid page size ${size}`);
+
+        paramStreams.internal.pageSizeSubject.next(size);
+        paramStreams.internal.pageNumberSubject.next(1); // Reset to first page
+      },
+
+      setSort(column: string, order: 'asc' | 'desc'){
+        paramStreams.internal.sortSubject.next({ column, order });
+        paramStreams.internal.pageNumberSubject.next(1); // Reset to first page
+      },
+
+      setFilters(filters: Record<string, unknown>) {
+        paramStreams.internal.filtersSubject.next(filters);
+        paramStreams.internal.pageNumberSubject.next(1); // Reset to first page
+      },
+
+      refresh() {
+        paramStreams.internal.refreshTriggerSubject.next();
+      },
+
+      reset() {
+        paramStreams.internal.pageNumberSubject.next(mergedConfig.initialPage);
+        paramStreams.internal.pageSizeSubject.next(mergedConfig.initialPageSize);
+        paramStreams.internal.sortSubject.next(null);
+        paramStreams.internal.filtersSubject.next({});
+        paramStreams.internal.refreshTriggerSubject.next();
+      },
+
+      clearCache() {
+        // Trigger a refresh which will bypass cache
+        paramStreams.internal.refreshTriggerSubject.next();
+      }
+    } as PaginatedActions;
+
+    // Return state and actions
+    return { state, actions };
   }
 }

@@ -55,16 +55,20 @@ export class DataStreamBuilderService {
           catchError(() => {
             // Return empty array on error, error already handled above
             return of([]);
-          })
+          }),
+          (result) => {
+            if (config.cacheTimeout) {
+              result.pipe(shareReplay({
+                bufferSize: 1,
+                refCount: true,
+                windowTime: config.cacheTimeout
+              }));
+            }
+
+            return result;
+          }
         );
       }),
-
-      // Optional caching
-      // (config.cacheTimeout ? [shareReplay({
-      //   bufferSize: 1,
-      //   refCount: true,
-      //   windowTime: config.cacheTimeout
-      // })] : [])
     );
   }
 
@@ -135,6 +139,7 @@ export class DataStreamBuilderService {
         if (config.dataMapper) {
           return config.dataMapper(response);
         }
+
         // Default: assume response is the array directly
         return Array.isArray(response) ? response : [];
       })
@@ -164,7 +169,8 @@ export class DataStreamBuilderService {
     queryParams[sizeParam] = params.size.toString();
 
     if (params.sort) {
-      const sortValue = `${params.sort.column}:${params.sort.direction}`;
+      const sortValue = `${params.sort.column}:${params.sort.order}`;
+
       queryParams[sortParam] = sortValue;
     }
 

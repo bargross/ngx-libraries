@@ -1,4 +1,4 @@
 export interface SortConfig {
   column: string;
-  direction: 'asc' | 'desc';
+  order: 'asc' | 'desc';
 }
