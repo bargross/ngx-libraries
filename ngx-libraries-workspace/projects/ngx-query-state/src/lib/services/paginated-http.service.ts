@@ -46,14 +46,14 @@ export class PaginatedHttpService {
       : new BehaviorSubject<number>(0);
 
     const state = {
-        data$,
-        loading$: loadingSubject.asObservable(),
-        error$: errorSubject.asObservable(),
-        totalCount$,
-        pageNumber$: paramStreams.readOnly.pageNumber$,
-        pageSize$: paramStreams.readOnly.pageSize$,
-        sortBy$: paramStreams.readOnly.sort$,
-        filters$: paramStreams.readOnly.filters$
+      data$,
+      loading$: loadingSubject.asObservable(),
+      error$: errorSubject.asObservable(),
+      totalCount$,
+      pageNumber$: paramStreams.readOnly.pageNumber$,
+      pageSize$: paramStreams.readOnly.pageSize$,
+      sortBy$: paramStreams.readOnly.sort$,
+      filters$: paramStreams.readOnly.filters$
     };
 
     // Actions update the subjects created by ParamStreamService

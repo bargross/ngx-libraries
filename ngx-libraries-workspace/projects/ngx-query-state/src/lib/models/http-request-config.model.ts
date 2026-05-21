@@ -1,5 +1,7 @@
+import { HttpMethod } from "../enums/http-method.enum";
+
 export interface HttpRequestConfig {
-  method: string;
+  method: HttpMethod;
   url: string;
   body?: unknown;
   params?: Record<string, string>;

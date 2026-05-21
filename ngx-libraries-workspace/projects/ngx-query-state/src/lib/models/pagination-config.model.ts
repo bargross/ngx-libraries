@@ -1,3 +1,4 @@
+import { HttpMethod } from "../enums/http-method.enum";
 import { HttpRequestConfig } from "./http-request-config.model";
 import { PaginationParams } from "./pagination-params.model";
 
@@ -6,7 +7,7 @@ export interface PaginationConfig<T = unknown> {
   url: string;
 
   // Optional with defaults
-  method?: 'GET' | 'POST';
+  method?: HttpMethod;
   pageParam?: string;
   sizeParam?: string;
   sortParam?: string;

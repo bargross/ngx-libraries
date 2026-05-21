@@ -1,4 +1,3 @@
-// data-stream-builder.service.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
@@ -18,6 +17,7 @@ import {
 } from 'rxjs/operators';
 import { PaginationConfig, PaginationParams, HttpRequestConfig } from '../models';
 import { isNullEmptyOrWhitespace } from '../utils';
+import { HttpMethod } from '../enums/http-method.enum';
 
 @Injectable()
 export class DataStreamBuilderService {
@@ -158,7 +158,7 @@ export class DataStreamBuilderService {
       return config.requestBuilder(params, config);
     }
 
-    const method = config.method || 'GET';
+    const method = config.method;
     const pageParam = config.pageParam || 'page';
     const sizeParam = config.sizeParam || 'size';
     const sortParam = config.sortParam || 'sort';
@@ -188,7 +188,7 @@ export class DataStreamBuilderService {
     }
 
     const requestConfig: HttpRequestConfig = {
-      method,
+      method: method as HttpMethod,
       url: config.url,
       params: queryParams,
       withCredentials: config.withCredentials || false
