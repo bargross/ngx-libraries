@@ -34,7 +34,6 @@ This monorepo is actively maintained; the first package is published and documen
 
 ## Roadmap
 - Q2 2026 - Add pagination http interface for pagination APIs. 
-- Q3 2026 – Add configuration tokens to ngx-update-notifier (custom endpoint, polling interval, storage key).
 
 ## License
 
