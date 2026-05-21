@@ -10,6 +10,7 @@ This monorepo uses Angular CLI and is structured to host multiple independent li
 | Package | Version | Description | Documentation |
 |---------|---------|-------------|----------------|
 | `ngx-update-notifier` | ![npm version](https://img.shields.io/npm/v/ngx-update-notifier) | Automatically detects new app versions and prompts users to refresh – no Service Worker required. | [README](https://github.com/bargross/ngx-libraries/blob/main/ngx-libraries-workspace/projects/ngx-update-notifier/README.md) |
+| `ngx-query-state` | ![npm version](https://img.shields.io/npm/v/ngx-query-state) | is a lightweight, RxJS-first library that eliminates pagination boilerplate. It manages loading states, errors, sorting, filtering, and caching – so you can focus on building your UI. | Not Available yet... |
 
 > **More packages coming soon** – this repository will host additional Angular utilities, UI components, and tools.
 
