@@ -1,6 +1,6 @@
 import { NgModule, ModuleWithProviders } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
-import { DataStreamBuilderService, ParamStreamBuilderService } from '../services';
+import { DataStreamService, ParamStreamBuilderService } from '../services';
 
 @NgModule({})
 export class NgxQueryStateModule {
@@ -9,7 +9,7 @@ export class NgxQueryStateModule {
       ngModule: NgxQueryStateModule,
       providers: [
         provideHttpClient(),
-        DataStreamBuilderService,
+        DataStreamService,
         ParamStreamBuilderService
       ]
     };

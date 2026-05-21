@@ -1,13 +1,13 @@
 // providers/provide-query-state.ts
 import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
-import { DataStreamBuilderService, ParamStreamBuilderService, PaginatedHttpService } from '../services';
+import { DataStreamService, ParamStreamBuilderService, PaginatedHttpService } from '../services';
 
 export function provideQueryState(): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideHttpClient(),
     PaginatedHttpService,
-    DataStreamBuilderService,
+    DataStreamService,
     ParamStreamBuilderService
   ]);
 }

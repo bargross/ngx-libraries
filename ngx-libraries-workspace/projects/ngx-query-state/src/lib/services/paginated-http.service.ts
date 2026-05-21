@@ -1,7 +1,7 @@
 // services/paginated-http.service.ts
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { DataStreamBuilderService } from './data-stream-builder.service';
+import { DataStreamService } from './data-stream.service';
 import { ParamStreamBuilderService } from './params-stream-buidler.service';
 import {
   PaginationConfig,
@@ -12,7 +12,7 @@ import { PaginationState } from '../models/pagination-state.model';
 
 @Injectable({ providedIn: 'root' })
 export class PaginatedHttpService {
-  private dataStreamBuilder = inject(DataStreamBuilderService);
+  private dataStreamService = inject(DataStreamService);
   private paramStreamBuilderService = inject(ParamStreamBuilderService);
 
   /**
@@ -50,7 +50,7 @@ export class PaginatedHttpService {
     const errorSubject = new BehaviorSubject<string | null>(null);
 
     // Build data stream
-    const data$ = this.dataStreamBuilder.buildDataStream(
+    const data$ = this.dataStreamService.buildDataStream(
       paramStreams.combinedParams$,
       mergedConfig,
       loadingSubject,
@@ -59,7 +59,7 @@ export class PaginatedHttpService {
 
     // Build total count stream (if totalMapper is provided)
     const totalCount$ = mergedConfig.totalMapper
-      ? this.dataStreamBuilder.buildTotalCountStream(
+      ? this.dataStreamService.buildTotalCountStream(
           paramStreams.filters$,
           paramStreams.refreshTrigger$,
           mergedConfig

@@ -5,10 +5,7 @@ import {
   Observable,
   BehaviorSubject,
   combineLatest,
-  of,
-  // defer,
-  // throwError,
-  // timer
+  of
 } from 'rxjs';
 import {
   switchMap,
@@ -18,12 +15,11 @@ import {
   map,
   shareReplay,
   tap,
-  // finalize
 } from 'rxjs/operators';
 import { PaginationConfig, PaginationParams, HttpRequestConfig } from '../models';
 
 @Injectable()
-export class DataStreamBuilderService {
+export class DataStreamService {
   private http = inject(HttpClient);
 
   /**
