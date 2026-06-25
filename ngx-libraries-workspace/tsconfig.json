@@ -8,6 +8,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "paths": {
+      "ngx-query-state": ["./dist/ngx-query-state"],
       "ngx-update-notifier": ["./dist/ngx-update-notifier"]
     },
     "noFallthroughCasesInSwitch": true,
@@ -37,6 +38,12 @@
     },
     {
       "path": "./projects/test-app/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/ngx-query-state/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/ngx-query-state/tsconfig.spec.json"
     }
   ]
 }

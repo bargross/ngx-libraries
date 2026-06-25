@@ -116,6 +116,32 @@
           }
         }
       }
+    },
+    "ngx-query-state": {
+      "projectType": "library",
+      "root": "projects/ngx-query-state",
+      "sourceRoot": "projects/ngx-query-state/src",
+      "prefix": "ml",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ngx-query-state/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ngx-query-state/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/ngx-query-state/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }
