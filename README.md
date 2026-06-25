@@ -1,4 +1,6 @@
-#### Package has not been released yet, is still being developed.
+![npm version](https://img.shields.io/npm/v/ngx-update-notifier)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/bargross/altered/dotnet.yml?branch=main)](https://github.com/bargross/altered/actions)
 
 # ngx-libraries
 
